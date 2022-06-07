@@ -2,14 +2,14 @@
 ## System Investigation: Elasticsearch
 ```
 |- netflix_title.csv
-|- queries.txt
+|- queries.json
 |- report.pdf
 ```  
 #### netflix_title.csv
 A copy of the dataset used for the system investigation.  
 Queries on Elastic cloud was executed on the index created based on this dataset.  
 
-#### queries.txt  
+#### queries.json  
 A copy of the code and queries as demonstrated in the final presentation.  
   
 #### report.pdf  
