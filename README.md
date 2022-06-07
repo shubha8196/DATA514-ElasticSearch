@@ -1,5 +1,5 @@
 # DATA514 Spring 2022 
-## System Investigation: Elasticsearch
+## System Investigation- Elasticsearch
 ```
 |- netflix_title.csv
 |- queries.json
