@@ -1,0 +1,255 @@
+# ---------------------------------------------------
+#                 INTRODUCTION
+# ---------------------------------------------------
+
+#Seeing all indices that exists in our space
+GET _cat/indices
+
+# Viewing the netflix index
+# Equivalent of SELECT * FROM netflix
+
+GET netflix/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+
+# Opening a particular document
+GET netflix/_doc/LQNHO4EBSwXPRGhyEd7g
+
+
+# Generic structure of writing a query in ES
+
+# Transforming the below SQL query into ES query
+
+# SELECT "title, "release_year", "duration", "ration", "director"
+# FROM netflix
+# LIMIT 10
+
+GET netflix/_search
+{
+  "_source": ["title", "release_year", "duration", "rating", "director"],
+  "size": 10
+}
+
+
+# We can also add bool operations to fine tune our search.
+# MUST stands for AND operator
+# FILTER stands for filtering
+# SHOULD stands for OR operator
+# MUST NOT stands for NOT operator
+# SIZE stands for document LIMIT displayed
+
+# ---------------------------------------------------
+#                 QUERIES
+# ---------------------------------------------------
+
+# Query 1: Matching
+# From the Netflix dataset, display the title, release year and the rating for movies which have the words "Nazi" OR "Camps" but NOT "deaths" in the title. Sort the responses in the descending order of release year.
+
+GET netflix/_search
+{
+  "_source": ["title", "release_year", "rating"],
+  "sort": [
+    {
+      "release_year": {
+        "order": "desc"
+      }
+    }
+    ],
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "title": "Nazi"
+          }
+        }
+        ,
+        {
+          "match": {
+            "title": "Camps"
+          }
+        }
+      ],
+      "must_not":{
+        "match":{
+          "title": "Death"
+        }
+
+      }
+    }
+  }
+}
+
+# ---------------------------------------------------
+# Query 2: Nested Boolean
+# Display the title of all the movies in the Netflix dataset where the title contains the word "Nazi" OR "King" and DOES NOT contain the words "Girl" OR "Boys". Sort them in the ascending order of year.
+
+GET netflix/_search
+{
+  "_source": ["title"],
+   "sort": [
+    {
+      "release_year": {
+        "order": "asc"
+      }
+    }
+  ],
+  "query": {
+    "bool":{
+      "should": [{
+        "match": {
+          "title": "King"
+        }
+      },
+      {
+        "match": {
+          "title": "Nazi"
+        }
+      }
+      ],
+      "must_not": [{
+        "bool": {
+          "should": [
+            {
+              "match": {
+                "title": "Girl"
+              }
+            },
+              {
+                "match":{
+                  "title": "Boys"
+                }
+              }
+          ]
+        }
+      }
+        ]
+    }
+  }
+}
+
+# ---------------------------------------------------
+# Query 3: multi-field and boosting
+# Write a query to search a phrase from multiple text fields in the Netflix index. Display the search results of the phrase "family" in cast, listed_in and description. Also prioritize the search results of the phrase appearing in the genre category (field name: listed_in) first.
+
+
+GET netflix/_search
+{
+  "_source": ["title", "description", "listed_in"],
+  "query": {
+    "multi_match": {
+      "query": "family",
+      "fields": [
+        "description",
+        "cast",
+        "listed_in"
+      ]
+    }
+  }
+}
+
+
+GET netflix/_search
+{
+  "_source": ["title", "description", "listed_in"],
+  "query": {
+    "multi_match": {
+      "query": "family",
+      "fields": [
+        "description",
+        "cast",
+        "listed_in^2"
+      ]
+    }
+  }
+}
+
+
+# ---------------------------------------------------
+# Query 4: Fuzziness function
+# Write a query to incorporate user error like spelling mistakes in their searches. For example mispelling the word fiction in description. Return the title, description and cast with the result ordered in ascending order of release year and limit the result to first 10 rows.
+
+
+POST netflix/_search
+{
+     "sort": [
+    {
+      "release_year": {
+        "order": "asc"
+      }
+    }
+  ],
+    "_source": ["title", "description", "cast"],
+    "query": {
+        "multi_match" : {
+            "query" : "science fction",
+            "fields": ["description"],
+            "fuzziness": 2
+        }
+    },
+    "size": 10
+}
+
+# ---------------------------------------------------
+# Query 5: Flexible searches - Slop functionality
+# Write a query to create more flexible searches. Write a query to search for "time travel" in the description field using the slop parameter of allowing skip of 1 word. Eg “time trval” can be matched by “time for travel” document as well. Display the title and description of the result.
+
+GET netflix/_search
+{
+  "_source": ["title", "description"],
+  "query": {
+    "match_phrase": {
+      "description": {
+        "query": "time travel",
+        "slop": 1
+      }
+    }
+  }
+}
+
+
+# ---------------------------------------------------
+# Query 6: Release trend over the years
+# Display the number of movies/TV series released throughout the years(write a query for time series indication using aggregations)
+
+
+GET /netflix/_search
+{
+  "aggs": {
+    "by_category": {
+      "multi_terms": {
+        "terms": [{
+          "field": "type"
+        }, {
+          "field": "release_year"
+        }]
+      }
+    }
+  }
+
+}
+
+# ---------------------------------------------------
+# Query 7: Querying and Aggregation
+# Display the most common/ significant terms used while providing a brief description of a movie/TV show.
+
+
+GET netflix/_search
+{
+  "query": {
+    "match": {
+      "type": "TV Show"
+    }
+  },
+  "aggregations": {
+    "popular_in_tv_shows": {
+      "significant_text": {
+        "field": "listed_in"
+      }
+    }
+  }
+}
